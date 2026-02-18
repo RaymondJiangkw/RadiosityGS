@@ -71,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_mesh", action="store_true")
     parser.add_argument("--skip_metrics", action="store_true")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--caching", action="store_true")
     parser.add_argument("--voxel_size", default=-1.0, type=float, help='Mesh: voxel size for TSDF')
     parser.add_argument("--depth_trunc", default=-1.0, type=float, help='Mesh: Max depth range for TSDF')
     parser.add_argument("--sdf_trunc", default=-1.0, type=float, help='Mesh: truncation value for TSDF')
@@ -114,7 +115,7 @@ if __name__ == "__main__":
                 ).to(torch.float32).cuda().permute(2, 0, 1) / 255.
                 view.original_albedo_image = image[:3] * image[3:]
         gaussExtractor.reconstruction(views)
-        gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks)
+        gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks, caching=args.caching)
         gaussExtractor.export_image(train_dir)
     
     if (not args.skip_test) and (len(scene.getTestCameras()) > 0):
@@ -133,7 +134,7 @@ if __name__ == "__main__":
                 ).to(torch.float32).cuda().permute(2, 0, 1) / 255.
                 view.original_albedo_image = image[:3] * image[3:]
         gaussExtractor.reconstruction(views)
-        gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks)
+        gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks, caching=args.caching)
         gaussExtractor.export_image(test_dir)
     
     if (not args.skip_novel):
@@ -170,7 +171,7 @@ if __name__ == "__main__":
                 envmap = imageio.v3.imread(hdr_path)
                 envmap = torch.from_numpy(envmap).permute(2, 0, 1).cuda()
                 ls.create_from_env_map(envmap / 20.0, convention='blender')
-                gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True)
+                gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True, caching=args.caching)
                 gaussExtractor.export_image(out_dir)
         
         if 'Synthetic4Relight' in dataset.source_path:
@@ -196,7 +197,7 @@ if __name__ == "__main__":
                 envmap = imageio.v3.imread(hdr_path)
                 envmap = torch.from_numpy(envmap).squeeze().permute(2, 0, 1).cuda()[:3]
                 ls.create_from_env_map(envmap / 20.0, convention='blender')
-                gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True)
+                gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True, caching=args.caching)
                 gaussExtractor.export_image(out_dir)
     
     if not args.skip_mesh:

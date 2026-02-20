@@ -17,6 +17,12 @@ from utils.point_utils import depth_to_normal
 from submodules.radiosity_solver import *
 from submodules.radiosity_solver.auto_diff import *
 
+def tone_mapper(radiance_values: torch.Tensor) -> torch.Tensor:
+    radiance_values = torch.log(radiance_values + 1.)
+    return torch.where(radiance_values > 0.0031308, 
+                       (1 + 0.055) * radiance_values.clamp_min(0.0031308).pow(1./2.4) - 0.055, 
+                       12.92 * radiance_values)
+
 def renderGI(
     viewpoint_camera, 
     pc, 
@@ -90,6 +96,9 @@ def renderGI(
     render_pack = render(viewpoint_camera, means3D[:-num_elements_ls], rotations[:-num_elements_ls], geovalues[:-num_elements_ls], scales[:-num_elements_ls], shs[:-num_elements_ls], pc.active_sh_degree, pipe, bg_color, colors_precomp=colors_precomp)
     
     render_pack['radiosity'] = radiosities[:-num_elements_ls]
+
+    if pipe.use_tone_mapper:
+        render_pack['render'] = tone_mapper(render_pack['render'])
     
     return render_pack
 

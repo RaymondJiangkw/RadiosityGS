@@ -20,7 +20,7 @@ class Camera(nn.Module):
     def __init__(self, colmap_id, R, T, FoVx, FoVy, image, gt_alpha_mask,
                  image_name, image_path, uid, pl_pos, pl_intensity, exr_image, 
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0, data_device = "cuda", 
-                 transform_matrix=None
+                 transform_matrix=None, intensity_norm=1.
                  ):
         super(Camera, self).__init__()
 
@@ -47,7 +47,7 @@ class Camera(nn.Module):
         self.image_height = self.original_image.shape[1] if self.original_image is not None else (self.exr_image.shape[2] if self.exr_image is not None else None)
         
         self.pl_pos = torch.nn.Parameter(torch.from_numpy((pl_pos + trans) * scale).float().to(self.data_device)) if pl_pos is not None else None
-        self.pl_intensity = torch.from_numpy(RGB2SH(pl_intensity)).float().to(self.data_device)[None, :] if pl_intensity is not None else None
+        self.pl_intensity = torch.from_numpy(RGB2SH(pl_intensity / intensity_norm)).float().to(self.data_device)[None, :] if pl_intensity is not None else None
         
         if gt_alpha_mask is not None:
             self.original_image = torch.clamp_min(self.original_image * gt_alpha_mask.to(self.data_device), 0.0) if self.original_image is not None else None

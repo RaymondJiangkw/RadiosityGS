@@ -64,6 +64,7 @@ class ModelParams(ParamGroup):
         self.max_scaling = 0.05
         self.max_lambda = 1000.
         self.max_inverse_falloff = 1.
+        self.intensity_norm = 1.
 
         self.data_device = "cuda"
         self.eval = False
@@ -79,6 +80,7 @@ class PipelineParams(ParamGroup):
         # 'MC' or 'hybrid' for global illumination, 'PR' for direct illumination
         self.solver_type = 'hybrid'
         self.not_use_cluster = False
+        self.use_tone_mapper = False
         super().__init__(parser, "Pipeline Parameters")
 
 class OptimizationParams(ParamGroup):

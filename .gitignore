@@ -13,3 +13,6 @@ _mask.py
 dataset
 .ipynb_checkpoints
 _retest.sh
+run_*
+tabulated*
+*triangle*

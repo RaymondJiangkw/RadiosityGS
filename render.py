@@ -71,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_mesh", action="store_true")
     parser.add_argument("--skip_metrics", action="store_true")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--white", action="store_true")
     parser.add_argument("--caching", action="store_true")
     parser.add_argument("--voxel_size", default=-1.0, type=float, help='Mesh: voxel size for TSDF')
     parser.add_argument("--depth_trunc", default=-1.0, type=float, help='Mesh: Max depth range for TSDF')
@@ -116,7 +117,7 @@ if __name__ == "__main__":
                 view.original_albedo_image = image[:3] * image[3:]
         gaussExtractor.reconstruction(views)
         gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks, caching=args.caching)
-        gaussExtractor.export_image(train_dir)
+        gaussExtractor.export_image(train_dir, enforce_bg=1. if args.white else None)
     
     if (not args.skip_test) and (len(scene.getTestCameras()) > 0):
         print("export rendered testing images ...")
@@ -135,7 +136,7 @@ if __name__ == "__main__":
                 view.original_albedo_image = image[:3] * image[3:]
         gaussExtractor.reconstruction(views)
         gaussExtractor.reconstructionGI(views, light_sources, pipe, background, args.num_walks, caching=args.caching)
-        gaussExtractor.export_image(test_dir)
+        gaussExtractor.export_image(test_dir, enforce_bg=1. if args.white else None)
     
     if (not args.skip_novel):
         if 'Stanford-ORB' in dataset.source_path and os.path.exists(os.path.join(dataset.source_path, 'transforms_novel.json')):
@@ -148,7 +149,7 @@ if __name__ == "__main__":
             assert os.path.exists(blender_HDR_path)
             assert os.path.exists(gt_env_map_path)
             gaussExtractor.reconstructionGINovel(dataset, transforms_novel, blender_HDR_path, gt_env_map_path, pipe, background, args.num_walks)
-            gaussExtractor.export_image(novel_dir)
+            gaussExtractor.export_image(novel_dir, enforce_bg=1. if args.white else None)
         
         if 'TensoIRSynthetic' in dataset.source_path:
             os.makedirs(novel_dir, exist_ok=True)
@@ -172,7 +173,7 @@ if __name__ == "__main__":
                 envmap = torch.from_numpy(envmap).permute(2, 0, 1).cuda()
                 ls.create_from_env_map(envmap / 20.0, convention='blender')
                 gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True, caching=args.caching)
-                gaussExtractor.export_image(out_dir)
+                gaussExtractor.export_image(out_dir, enforce_bg=1. if args.white else None)
         
         if 'Synthetic4Relight' in dataset.source_path:
             os.makedirs(novel_dir, exist_ok=True)
@@ -198,7 +199,7 @@ if __name__ == "__main__":
                 envmap = torch.from_numpy(envmap).squeeze().permute(2, 0, 1).cuda()[:3]
                 ls.create_from_env_map(envmap / 20.0, convention='blender')
                 gaussExtractor.reconstructionGI(test_cameras, ls, pipe, background, args.num_walks, clean_albedo=True, caching=args.caching)
-                gaussExtractor.export_image(out_dir)
+                gaussExtractor.export_image(out_dir, enforce_bg=1. if args.white else None)
     
     if not args.skip_mesh:
         print("export mesh ...")

@@ -439,7 +439,7 @@ class GaussianExtractor(object):
         return mesh
 
     @torch.no_grad()
-    def export_image(self, path):
+    def export_image(self, path, enforce_bg=None):
         render_path = os.path.join(path, "renders")
         gts_path = os.path.join(path, "gt")
         albedo_path = os.path.join(path, "albedos")
@@ -463,13 +463,21 @@ class GaussianExtractor(object):
                 os.makedirs(gts_albedo_path, exist_ok=True)
                 save_img_u8(viewpoint_cam.original_albedo_image.clamp(0., 1.).permute(1,2,0).cpu().numpy(), os.path.join(gts_albedo_path, '{0:05d}'.format(idx) + ".png"))
             
-            rgbmap = self.rgbmaps[idx]
+            rgb_image = self.rgbmaps[idx].clamp(0., 1.)
+            gt_image = gt.to(rgb_image.device)
+            gt_alpha_image = viewpoint_cam.gt_alpha_mask.squeeze().to(gt_image.device)[None]
+
             # We apply masking to all baselines
-            if viewpoint_cam.gt_alpha_mask is not None:
-                rgbmap *= viewpoint_cam.gt_alpha_mask.squeeze()[None].to(rgbmap.device)
+            if enforce_bg is not None:
+                gt_image = gt_image * gt_alpha_image + enforce_bg * (1. - gt_alpha_image)
+                rgb_image = rgb_image * gt_alpha_image + enforce_bg * (1. - gt_alpha_image)
+            else:
+                gt_image = gt_image * gt_alpha_image
+                rgb_image = rgb_image * gt_alpha_image
+
+            save_img_u8(gt_image.permute(1,2,0).cpu().numpy(), os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
+            save_img_u8(rgb_image.permute(1,2,0).cpu().numpy(), os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
             
-            save_img_u8(gt.permute(1,2,0).cpu().numpy(), os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
-            save_img_u8(rgbmap.clamp(0., 1.).permute(1,2,0).cpu().numpy(), os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
             if len(self.albedos) > 0: save_img_u8(self.albedos[idx].clamp(0., 1.).permute(1,2,0).cpu().numpy(), os.path.join(albedo_path, '{0:05d}'.format(idx) + ".png"))
 
             # if viewpoint_cam.gt_alpha_mask is not None:
